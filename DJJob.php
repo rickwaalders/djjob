@@ -25,7 +25,7 @@ class DJBase {
     const     INFO = 1;
     const    DEBUG = 0;
 
-    private static $log_level = self::DEBUG;
+    private static $log_level = self::ERROR;
 
     private static $db = null;
     protected static $jobsTable = "";
@@ -465,9 +465,12 @@ class DJJob extends DJBase {
     }
 
     public static function enqueue($handler, $queue = "default", $run_at = null) {
+    	
+    	$serialized = serialize($handler);
+    	
         $affected = self::runUpdate(
-            "INSERT INTO " . self::$jobsTable . " (handler, queue, run_at, created_at) VALUES(?, ?, ?, NOW())",
-            array(serialize($handler), (string) $queue, $run_at)
+            "INSERT IGNORE INTO " . self::$jobsTable . " (handler, queue, run_at, created_at, hash) VALUES(?, ?, ?, NOW(), ?)",
+            array($serialized, (string) $queue, $run_at, md5($serialized))
         );
 
         if ($affected < 1) {
